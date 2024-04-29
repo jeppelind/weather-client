@@ -1,113 +1,211 @@
-import Image from "next/image";
+import { WiThermometer } from "react-icons/wi";
+import WeatherIcon from "./_components/weather-icon";
 
-export default function Home() {
+type Forecast = {
+  location: {
+    name: string,
+    country: string,
+  },
+  current: {
+    is_day: number,
+    condition: {
+      text: string,
+      code: number,
+    },
+    temp_c: number,
+    temp_f: number,
+    feelslike_c: number,
+    feelslike_f: number,
+    maxtemp_c: number,
+		maxtemp_f: number,
+		mintemp_c: number,
+	  mintemp_f: number,
+    precip_mm: number,
+    precip_in: number,
+  },
+  forecast: {
+    days: {
+      date: string,
+      maxtemp_c: number,
+      maxtemp_f: number,
+      mintemp_c: number,
+      mintemp_f: number,
+      daily_chance_of_rain: number,
+      code: number
+    }[],
+    hours: {
+      time_epoch: number,
+      time: string,
+      is_day: number,
+      temp_c: number,
+      temp_f: number,
+      chance_of_rain: number,
+      code: number
+    }[],
+  },
+}
+
+type SearchParams = {
+  location: string,
+  temp: string,
+}
+
+const getForecast = async (location: string) => {
+  const URL = `${process.env.API_URL}/forecast?location=${location}`;
+  try {
+    const res = await fetch(URL, {
+      next: {
+        revalidate: 3600, // Cache age in seconds
+      }
+    });
+    if (!res.ok) {
+      throw new Error(`Error fetching data. ${res.statusText}`);
+    }
+    const data: Forecast = await res.json();
+    return data;
+  } catch (err) {
+    console.error(err)
+    return null;
+  }
+}
+
+const CurrentWeather = async ({ location, temp }: SearchParams) => {
+  const data = await getForecast(location);
+  if (!data) {
+    return <p className="text-xl">{`Problem fethching data for "${location}"`}</p>;
+  }
+
   return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-24">
-      <div className="z-10 w-full max-w-5xl items-center justify-between font-mono text-sm lg:flex">
-        <p className="fixed left-0 top-0 flex w-full justify-center border-b border-gray-300 bg-gradient-to-b from-zinc-200 pb-6 pt-8 backdrop-blur-2xl dark:border-neutral-800 dark:bg-zinc-800/30 dark:from-inherit lg:static lg:w-auto  lg:rounded-xl lg:border lg:bg-gray-200 lg:p-4 lg:dark:bg-zinc-800/30">
-          Get started by editing&nbsp;
-          <code className="font-mono font-bold">app/page.tsx</code>
-        </p>
-        <div className="fixed bottom-0 left-0 flex h-48 w-full items-end justify-center bg-gradient-to-t from-white via-white dark:from-black dark:via-black lg:static lg:size-auto lg:bg-none">
-          <a
-            className="pointer-events-none flex place-items-center gap-2 p-8 lg:pointer-events-auto lg:p-0"
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{" "}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className="dark:invert"
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
+    <>
+      <p>{data.location.name}, {data.location.country}</p>
+      <div className="text-8xl font-bold text-slate-800 dark:text-slate-200 m-4 mb-1">
+        {(temp === 'f') ? data.current.temp_f : data.current.temp_c}°
+      </div>
+      <div className="flex items-center text-lg text-slate-800 dark:text-slate-200">
+        <span className="text-7xl">
+          <WeatherIcon code={data.current.condition.code} isDay={data.current.is_day === 1} />
+        </span>
+        {data.current.condition.text}
+      </div>
+      <p>Feels like {(temp === 'f') ? data.current.feelslike_f : data.current.feelslike_c}°</p>
+    </>
+  )
+}
+
+const HourlyForecast = async ({ location, temp }: SearchParams) => {
+  const data = await getForecast(location);
+  if (!data) {
+    return null;
+  }
+
+  const elementArr: JSX.Element[] = [];
+  const timeNow = Date.now();
+  const startIdx = data.forecast.hours.findIndex(hour => hour.time_epoch > timeNow);
+
+  for (var i = startIdx; i < startIdx + 6; i++) { // Only show 6 upcoming hours
+    const hour = data.forecast.hours[i];
+    elementArr.push(
+      <div className="flex items-center flex-col grow" key={hour.time_epoch}>
+        <div className="text-slate-700 dark:text-slate-300 ">{(temp === 'f') ? hour.temp_f : hour.temp_c}°</div>
+        <div className="text-slate-700 dark:text-slate-300 text-4xl">
+          <WeatherIcon code={hour.code} isDay={hour.is_day === 1} />
         </div>
+        <div className="text-xs">{hour.time.slice(-5)}</div>
       </div>
+    );
+  }
 
-      <div className="relative z-[-1] flex place-items-center before:absolute before:h-[300px] before:w-full before:-translate-x-1/2 before:rounded-full before:bg-gradient-radial before:from-white before:to-transparent before:blur-2xl before:content-[''] after:absolute after:-z-20 after:h-[180px] after:w-full after:translate-x-1/3 after:bg-gradient-conic after:from-sky-200 after:via-blue-200 after:blur-2xl after:content-[''] before:dark:bg-gradient-to-br before:dark:from-transparent before:dark:to-blue-700 before:dark:opacity-10 after:dark:from-sky-900 after:dark:via-[#0141ff] after:dark:opacity-40 sm:before:w-[480px] sm:after:w-[240px] before:lg:h-[360px]">
-        <Image
-          className="relative dark:drop-shadow-[0_0_0.3rem_#ffffff70] dark:invert"
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
-        />
+  return (
+    <>
+      <h2 className="mb-2 text-lg">Hourly forecast</h2>
+      <div className="flex">
+        {elementArr}
       </div>
-
-      <div className="mb-32 grid text-center lg:mb-0 lg:w-full lg:max-w-5xl lg:grid-cols-4 lg:text-left">
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Docs{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-sm opacity-50">
-            Find in-depth information about Next.js features and API.
-          </p>
-        </a>
-
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Learn{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-sm opacity-50">
-            Learn about Next.js in an interactive course with&nbsp;quizzes!
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Templates{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-sm opacity-50">
-            Explore starter templates for Next.js.
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Deploy{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-balance text-sm opacity-50">
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
-    </main>
+    </>
   );
+}
+
+const DailyForecast = async ({ location, temp }: SearchParams) => {
+  const data = await getForecast(location);
+  if (!data) {
+    return null;
+  }
+  
+  const getDayLabel = (dateStr: string) => {
+    const dayLabels = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const date = new Date(dateStr);
+    if (date.getTime() > Date.now()) {
+      return dayLabels[date.getDay()];
+    }
+    return 'Today';
+  }
+
+  return (
+    <>
+      <h2 className="mb-1 text-lg">3-day forecast</h2>
+      <table className="min-w-full">
+        <tbody>
+          {
+            data.forecast.days.map((day, idx) => (
+              <tr key={idx}>
+                <td className="text-slate-700 dark:text-slate-300 ">{getDayLabel(day.date)}</td>
+                <td className="flex flex-col items-end text-3xl py-2 text-slate-700 dark:text-slate-300 "><WeatherIcon code={day.code} isDay={true} /></td>
+                <td className="text-right">
+                  <span className="text-slate-700 dark:text-slate-300 ">{(temp === 'f') ? day.maxtemp_f : day.maxtemp_c}°</span>
+                  <span>/{(temp === 'f') ? day.maxtemp_f : day.mintemp_c}°</span>
+                </td>
+              </tr>
+            ))
+          }
+        </tbody>
+      </table>
+    </>
+  );
+}
+
+export default async function Home({
+  searchParams
+}: { searchParams: { [key: string]: string | undefined } }) {
+  const { l, t } = searchParams;
+  const temp = t || 'c';
+  const location = l;
+  
+  if (location) {
+    try {
+      return (
+        <main className="flex min-h-screen flex-col items-center pt-16">
+          <CurrentWeather location={location} temp={temp} />
+
+          <div className="mt-16 px-10 min-w-full sm:min-w-128">
+            <HourlyForecast location={location} temp={temp} />
+          </div>
+
+          <div className="mt-8 px-10 min-w-full sm:min-w-128">
+            <DailyForecast location={location} temp={temp} />
+          </div>
+        </main>
+      )
+    } catch (err) {
+      console.error(err)
+      return (
+        <main className="flex items-center flex-col">
+          <div className="flex min-h-screen flex-col justify-center items-center">
+            <WiThermometer className="text-7xl" />
+            <p>Problem fetching data</p>
+          </div>
+        </main>
+      )
+    }
+  }
+
+  return (
+    <main>
+      <main className="flex items-center flex-col">
+          <div className="flex min-h-screen flex-col justify-center items-center">
+            <p className="text-lg">Simple Weather</p>
+            <p>Please provide a location to show forecast.</p>
+          </div>
+        </main>
+    </main>
+  )
 }
