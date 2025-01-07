@@ -1,6 +1,6 @@
-import { WiThermometer } from "react-icons/wi";
 import WeatherIcon from "./_components/weather-icon";
-import Search from "./Search";
+import { redirect } from "next/navigation";
+import Link from "next/link";
 
 type Forecast = {
   location: {
@@ -56,14 +56,12 @@ const getForecast = async (location: string) => {
   const res = await fetch(URL, {
     next: {
       revalidate: 3600, // Cache age in seconds
-    }
+    },
   });
   if (!res.ok) {
     throw new Error(`Error fetching data. ${res.statusText}`);
   }
-  console.log(res);
   const data: Forecast = await res.json();
-  console.log(data);
   return data;
 }
 
@@ -152,42 +150,36 @@ export default async function Home({
   const { l, t } = searchParams;
   const temp = t || 'c';
   const location = l;
-  
-  if (location) {
-    try {
-      const data = await getForecast(location);
-      return (
-        <main className="flex min-h-screen flex-col items-center pt-16">
-        <CurrentWeather data={data} temp={temp} />
 
-        <div className="mt-16 px-10 min-w-full sm:min-w-128">
-          <HourlyForecast data={data} temp={temp} />
-        </div>
-
-        <div className="mt-8 px-10 min-w-full sm:min-w-128">
-          <DailyForecast data={data} temp={temp} />
-        </div>
-      </main>
-      )
-    } catch (err) {
-      console.error(err)
-      return (
-        <main className="flex min-h-screen flex-col items-center justify-center">
-          <div className="flex flex-col items-center">
-            <p className="text-xl">{`Problem fetching data for "${location}"`}</p>
-            <p className="text-lg mb-12">Please try again.</p>
-            <Search />
-          </div>
-        </main>
-      )
-    }
+  if (!location) {
+    redirect('/search');
   }
+  
+  try {
+    const data = await getForecast(location);
+    return (
+      <main className="flex min-h-screen flex-col items-center pt-16">
+      <CurrentWeather data={data} temp={temp} />
 
-  return (
-    <main className="flex min-h-screen flex-col items-center justify-center">
-      <div className="flex flex-col items-center gap-4">
-        <Search />
+      <div className="mt-16 px-10 min-w-full sm:min-w-128">
+        <HourlyForecast data={data} temp={temp} />
+      </div>
+
+      <div className="mt-8 px-10 min-w-full sm:min-w-128">
+        <DailyForecast data={data} temp={temp} />
       </div>
     </main>
-  )
+    )
+  } catch (err) {
+    console.error(err)
+    return (
+      <main className="flex min-h-screen flex-col items-center justify-center">
+        <div className="flex flex-col items-center">
+          <p className="text-xl">{`Problem fetching data for "${location}"`}</p>
+          <p className="text-lg mb-12">Please try again.</p>
+          <Link href="/search">Search for a new location</Link>
+        </div>
+      </main>
+    )
+  }
 }
