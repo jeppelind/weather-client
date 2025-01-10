@@ -68,7 +68,7 @@ const getForecast = async (location: string) => {
 const CurrentWeather = async ({ data, temp }: WeatherDisplayProps) => {
   return (
     <>
-      <p>{data.location.name}, {data.location.country}</p>
+      <p><span className="font-bold">{data.location.name}</span>, {data.location.country}</p>
       <div className="text-8xl font-bold text-slate-800 dark:text-slate-200 m-4 mb-1">
         {(temp === 'f') ? data.current.temp_f : data.current.temp_c}°
       </div>
