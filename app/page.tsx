@@ -133,7 +133,7 @@ const DailyForecast = async ({ data, temp }: WeatherDisplayProps) => {
                 <td className="flex flex-col items-end text-3xl py-2 text-slate-700 dark:text-slate-300 "><WeatherIcon code={day.code} isDay={true} /></td>
                 <td className="text-right">
                   <span className="text-slate-700 dark:text-slate-300 ">{(temp === 'f') ? day.maxtemp_f : day.maxtemp_c}°</span>
-                  <span>/{(temp === 'f') ? day.maxtemp_f : day.mintemp_c}°</span>
+                  <span>/{(temp === 'f') ? day.mintemp_f : day.mintemp_c}°</span>
                 </td>
               </tr>
             ))
