@@ -61,7 +61,7 @@ const Search = ({ onSubmit }: { onSubmit: (location: string) => Promise<Location
         </div>
       }
       {locations.map((location) => (
-        <Link key={location.id} href={`/?l=${location.url}&t=${temperature}`} className="group w-full">
+        <Link key={location.id} href={`/?l=${location.lat},${location.lon}&t=${temperature}`} className="group w-full">
           <div className="bg-slate-200 dark:bg-slate-800 rounded-lg p-3 hover:bg-blue-500">
             <p className="text-lg text-slate-600 dark:text-slate-300 group-hover:text-slate-100">{location.name}</p>
             <p className="text-sm text-slate-400 dark:text-slate-500 group-hover:text-slate-200">{location.region}, {location.country}</p>
